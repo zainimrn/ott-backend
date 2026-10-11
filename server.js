@@ -9,7 +9,7 @@ app.use(express.json());
 // --- DATABASE MODEL ---
 const keySchema = new mongoose.Schema({
   key: { type: String, required: true, unique: true },
-  cookies: { type: Array, required: true },
+  nftoken: { type: String, required: true },
   status: { type: String, default: 'inactive' },
   activeDeviceId: { type: String, default: null },
   lastHeartbeat: { type: Date, default: null },
@@ -30,13 +30,15 @@ app.post('/api/activate', async (req, res) => {
     if (!keyDoc) return res.status(404).json({ error: 'Invalid key' });
     if (keyDoc.revoked) return res.status(403).json({ error: 'Key revoked' });
     if (keyDoc.status === 'active' && keyDoc.activeDeviceId !== deviceId) {
-      return res.status(403).json({ error: 'Key already in use on another browser.' });
+      return res.status(403).json({ error: 'Already in use on another browser.' });
     }
     keyDoc.status = 'active';
     keyDoc.activeDeviceId = deviceId;
     keyDoc.lastHeartbeat = new Date();
     await keyDoc.save();
-    res.json({ cookies: keyDoc.cookies });
+    
+    // CHANGED: Return nftoken instead of cookies
+    res.json({ nftoken: keyDoc.nftoken });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
